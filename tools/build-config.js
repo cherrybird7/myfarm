@@ -1,4 +1,4 @@
-var filename = 'sealdice-js-ext.js'
+var filename = '我的农田.js'
 
 module.exports = {
   dev: {
