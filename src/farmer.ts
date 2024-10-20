@@ -1,5 +1,4 @@
 import { WeatherManager } from './weatherManager';
-import { Fisher } from './fisher'; // 确保正确导入 Fisher 类
 
 export enum WeatherType {
   Sunny = "晴天",
@@ -18,7 +17,7 @@ const WeatherEffects = {
 };
 
 // 定义全局商店数据库
-const globalStore = {
+export const globalStore = {
   "防风草种子": { price: 50, level: 1 },
   "胡萝卜种子": { price: 60, level: 1 },
   "白萝卜种子": { price: 70, level: 2 },
@@ -145,13 +144,19 @@ export class Farmer {
       if (this.level === 4) {
         return `恭喜！您升级到${this.level}级了，可以解锁更多商品了。\n恭喜您解锁鱼塘，开启钓鱼功能！`;
       }
+      else if (this.level === 3) {
+        return `恭喜！您升级到${this.level}级了，可以解锁更多商品了。\n周围的神秘小精灵开始注意你的田地了！`;
+      }
       return `恭喜！您升级到${this.level}级了，可以解锁更多商品了。`;
     }
     return null;
   }
 
   public fish(): string {
-    const fisher = new Fisher(this);
+    const fisher = new Fisher(this.id, this.name);
+    for (const key in fisher) {
+      fisher[key] = this[key] || fisher[key]
+    }
     return fisher.fish();
   }
 
@@ -175,6 +180,41 @@ export class Farmer {
 
     let plantingTime = Math.random() * (4 - 0.5) + 0.5;
     let harvestTime = (/* @__PURE__ */ new Date()).getTime() + plantingTime * 60 * 60 * 1000 * weatherEffect;
+
+    // 添加事件
+    const eventChance = 0.15; // 15% 的概率
+    const eventHappened = Math.random() < eventChance;
+
+    console.log(`事件触发概率: ${eventChance}, 事件是否触发: ${eventHappened}`);
+
+    if (eventHappened) {
+      const eventType = Math.random() < 0.33 ? "小精灵催熟" : Math.random() < 0.5 ? "女巫药水致死" : "狗熊压坏作物";
+      console.log(`事件类型: ${eventType}`);
+
+      if (eventType === "小精灵催熟" && this.level >= 3) {
+        harvestTime *= 0.8; // 缩短20%的种植时间
+        return `哦呀，你的田地吸引到这群可爱的小东西了啊~他们给田地施加了魔法哦。\n成功种植${quantity}块${seed}，成熟时间为${this.formatTime(plantingTime * 0.8)}。`;
+      } else if (eventType === "女巫药水致死") {
+        this.crops = {}; // 农作物全部消失
+        const compensation = Math.floor(Math.random() * (100 - 50 + 1)) + 50;
+        const fertilizer = Math.floor(Math.random() * (6 - 3 + 1)) + 3;
+        this.money += compensation;
+        if (!this.warehouse["肥料"]) {
+          this.warehouse["肥料"] = 0;
+        }
+        this.warehouse["肥料"] += fertilizer;
+        this.saveData();
+        return `呜哇！路过的实习女巫不小心把药水全洒了，你的农作物全没了！对方很抱歉，于是给了你的补偿~获得${compensation}金币和肥料×${fertilizer}。`;
+      } else if (eventType === "狗熊压坏作物" && quantity > 2) { // 只有当种植数量大于2时才触发
+        const fieldsToDestroy = Math.floor(Math.random() * (5 - 3 + 1)) + 3;
+        const fieldsDestroyed = Math.min(fieldsToDestroy, quantity);
+        const destroyedFields = Object.keys(this.crops).slice(0, fieldsDestroyed);
+        destroyedFields.forEach(field => delete this.crops[field]);
+        this.saveData();
+        return `不好了，一只路过的狗熊在你的田地里睡了一觉，压坏了${fieldsDestroyed}块作物...`;
+      }
+    }
+
     for (let i = 0; i < quantity; i++) {
       let field = this.getNextAvailableField();
       this.crops[field] = { seed, harvestTime, stolen: false };
@@ -247,11 +287,64 @@ export class Farmer {
     if (!this.crops[field] || this.crops[field].harvestTime > (/* @__PURE__ */ new Date()).getTime() || this.crops[field].stolen) {
       return `${field}还没有成熟作物哦！`;
     }
+
+    // 冒险者偷菜事件
+    const adventurerEventChance = 0.05; // 5% 的概率
+    const adventurerEventHappened = Math.random() < adventurerEventChance;
+
+    console.log(`冒险者偷菜事件触发概率: ${adventurerEventChance}, 事件是否触发: ${adventurerEventHappened}`);
+
+    if (adventurerEventHappened) {
+      const matureFields = Object.keys(this.crops).filter(field => this.crops[field].harvestTime <= (/* @__PURE__ */ new Date()).getTime() && !this.crops[field].stolen);
+      console.log(`成熟田地数量: ${matureFields.length}`);
+
+      if (matureFields.length > 0) {
+        const fieldsToSteal = Math.floor(Math.random() * (2 - 1 + 1)) + 1;
+        const stolenFields = matureFields.slice(0, fieldsToSteal);
+        console.log(`被偷走的田地数量: ${stolenFields.length}`);
+
+        stolenFields.forEach(field => delete this.crops[field]);
+
+        const compensation = Math.floor(Math.random() * (100 - 50 + 1)) + 50;
+        const seedTypes = Object.keys(globalStore).filter(item => item.endsWith("种子"));
+        const seedType = seedTypes[Math.floor(Math.random() * seedTypes.length)];
+        const seedQuantity = Math.floor(Math.random() * (5 - 3 + 1)) + 3;
+
+        this.money += compensation;
+        if (!this.warehouse[seedType]) {
+          this.warehouse[seedType] = 0;
+        }
+        this.warehouse[seedType] += seedQuantity;
+        this.saveData();
+
+        return `路过的冒险者采走了你田地里的作物！不过我们及时追上了他们~\n总之要回了一些报酬呢...也不算差？\n获得${compensation}金币和${seedType}×${seedQuantity}。`;
+      }
+    }
+
     let seed = this.crops[field].seed;
     let crop = seed.replace("种子", "");
     let seedPrice = globalStore[seed].price;
     let cropPrice = seedPrice * 0.5;
     let experience = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
+
+    // 收获双倍作物的概率
+    let doubleHarvestChance = this.level * 0.5; // 等级4开始时0.5%，等级5是1%...以此类推
+
+    // 如果是丰收日，增加5%的概率
+    if (this.weatherSystem.getCurrentWeather() === WeatherType.Harvest) {
+      doubleHarvestChance += 5;
+    }
+
+    const doubleHarvestHappened = Math.random() < doubleHarvestChance / 100;
+
+    if (doubleHarvestHappened) {
+      cropPrice *= 2;
+      experience *= 2;
+      this.warehouse[crop] += 2;
+      this.saveData();
+      return `哦呀哦呀~简直是大丰收！\n成功收获${crop}×2，获得${cropPrice}金币和${experience}经验。`;
+    }
+
     this.money += cropPrice;
     this.experience += experience;
     delete this.crops[field];
@@ -355,41 +448,41 @@ export class Farmer {
   }
 
   sellItem(item: string, quantity: number = 1) {
-  // 检查商品名后所跟数量是否为字符
-  if (isNaN(quantity) || !Number.isInteger(quantity) || quantity <= 0) {
-    return `请输入有效的出售数量。`;
-  }
+    // 检查商品名后所跟数量是否为字符
+    if (isNaN(quantity) || !Number.isInteger(quantity) || quantity <= 0) {
+      return `请输入有效的出售数量。`;
+    }
 
-  if (!this.warehouse[item]) {
-    return `你的仓库中没有${item}哦`;
-  }
-  if (this.warehouse[item] < quantity) {
-    return `你的仓库中没有足够的${item}啦！`;
-  }
+    if (!this.warehouse[item]) {
+      return `你的仓库中没有${item}哦`;
+    }
+    if (this.warehouse[item] < quantity) {
+      return `你的仓库中没有足够的${item}啦！`;
+    }
 
-  let sellPrice: number;
-  if (item.endsWith("种子")) {
-    sellPrice = globalStore[item].price * 0.8;
-  } else if (item === "鱼饵") {
-    sellPrice = globalStore[item].price * 0.5;
-  } else if (this.isFish(item)) { // 调用 isFish 方法
-    sellPrice = this.getFishPrice(item);
-  } else {
-    let seed = item + "种子";
-    sellPrice = globalStore[seed].price * 1.25;
-  }
+    let sellPrice: number;
+    if (item.endsWith("种子")) {
+      sellPrice = globalStore[item].price * 0.8;
+    } else if (item === "鱼饵") {
+      sellPrice = globalStore[item].price * 0.5;
+    } else if (this.isFish(item)) { // 调用 isFish 方法
+      sellPrice = this.getFishPrice(item);
+    } else {
+      let seed = item + "种子";
+      sellPrice = globalStore[seed].price * 1.25;
+    }
 
-  let totalSellPrice = sellPrice * quantity;
-  this.money += totalSellPrice;
-  this.warehouse[item] -= quantity;
-  if (this.warehouse[item] === 0) {
-    delete this.warehouse[item];
+    let totalSellPrice = sellPrice * quantity;
+    this.money += totalSellPrice;
+    this.warehouse[item] -= quantity;
+    if (this.warehouse[item] === 0) {
+      delete this.warehouse[item];
+    }
+    this.saveData();
+    return `成功出售${item}${quantity}个，获得${totalSellPrice}金币~`;
   }
-  this.saveData();
-  return `成功出售${item}${quantity}个，获得${totalSellPrice}金币~`;
-}
   // 新增方法：判断是否为鱼类物品
-  private isFish(item: string): boolean {
+  public isFish(item: string): boolean {
     const fishTypes = ["鳀鱼", "沙丁鱼", "鲷鱼", "大嘴鲈鱼", "鲤鱼"]; // 可以根据需要扩展
     return fishTypes.includes(item);
   }
@@ -397,38 +490,38 @@ export class Farmer {
   // 新增方法：获取鱼类物品的售价
   private getFishPrice(item: string): number {
     const fishPrices = {
-      "鲤鱼":20,
-      "鲱鱼":30,
-      "小嘴鲈鱼":30,
-      "太阳鱼":45,
-      "鳀鱼":45,
-      "沙丁鱼":45,
-      "河鲈":50,
-      "鲢鱼":50,
-      "鲷鱼":50,
-      "红鲷鱼":55,
-      "海参":55,
-      "虹鳟鱼":55,
-      "大眼鱼":60,
-      "西鲱":60,
-      "大头鱼":60,
-      "大嘴鲈鱼":60,
-      "鲑鱼":60,
-      "鬼鱼":65,
-      "罗非鱼":65,
-      "木跃鱼":65,
-      "狮子鱼":65,
-      "比目鱼":70,
-      "大比目鱼":70,
-      "午夜鲤鱼":70,
-      "史莱姆鱼":70,
-      "虾虎鱼":70,
-      "红鲻鱼":75,
-      "青花鱼":75,
-      "狗鱼":75,
-      "虎纹鳟鱼":75,
-      "蓝铁饼鱼":75,
-      "沙鱼":75
+      "鲤鱼": 20,
+      "鲱鱼": 30,
+      "小嘴鲈鱼": 30,
+      "太阳鱼": 45,
+      "鳀鱼": 45,
+      "沙丁鱼": 45,
+      "河鲈": 50,
+      "鲢鱼": 50,
+      "鲷鱼": 50,
+      "红鲷鱼": 55,
+      "海参": 55,
+      "虹鳟鱼": 55,
+      "大眼鱼": 60,
+      "西鲱": 60,
+      "大头鱼": 60,
+      "大嘴鲈鱼": 60,
+      "鲑鱼": 60,
+      "鬼鱼": 65,
+      "罗非鱼": 65,
+      "木跃鱼": 65,
+      "狮子鱼": 65,
+      "比目鱼": 70,
+      "大比目鱼": 70,
+      "午夜鲤鱼": 70,
+      "史莱姆鱼": 70,
+      "虾虎鱼": 70,
+      "红鲻鱼": 75,
+      "青花鱼": 75,
+      "狗鱼": 75,
+      "虎纹鳟鱼": 75,
+      "蓝铁饼鱼": 75,
+      "沙鱼": 75
     }; // 可以根据需要扩展
     return fishPrices[item] || 0;
   }
@@ -453,50 +546,50 @@ export class Farmer {
   }
 
   public stealCrop(targetFarmer: Farmer): string {
-  const now = Date.now();
+    const now = Date.now();
 
-  // 检查偷窃冷却时间
-  if (this.lastStealTime !== 0 && now - this.lastStealTime < this.stealCooldown) {
-    const remainingTime = Math.ceil((this.stealCooldown - (now - this.lastStealTime)) / 1000);
-    return `附近还有人看着呢，再等${remainingTime}秒后再试吧...`;
+    // 检查偷窃冷却时间
+    if (this.lastStealTime !== 0 && now - this.lastStealTime < this.stealCooldown) {
+      const remainingTime = Math.ceil((this.stealCooldown - (now - this.lastStealTime)) / 1000);
+      return `附近还有人看着呢，再等${remainingTime}秒后再试吧...`;
+    }
+
+
+    // 检查目标农田中是否有成熟的作物
+    const matureFields = Object.keys(targetFarmer.crops).filter(field => {
+      return targetFarmer.crops[field].harvestTime <= now && !targetFarmer.crops[field].stolen;
+    });
+
+
+    if (matureFields.length === 0) {
+      return `这家人的田地中可没有成熟的作物，换个目标吧~`;
+    }
+
+    // 随机选择一块成熟的作物
+    const randomField = matureFields[Math.floor(Math.random() * matureFields.length)];
+    const seed = targetFarmer.crops[randomField].seed;
+    const crop = seed.replace("种子", "");
+
+    // 将偷窃的作物添加到偷窃者的仓库中
+    if (!this.warehouse[crop]) {
+      this.warehouse[crop] = 0;
+    }
+    this.warehouse[crop]++;
+
+
+    // 从被偷窃者的农田中删除被偷窃的作物
+    delete targetFarmer.crops[randomField];
+
+
+    // 更新偷窃者的上次偷窃时间
+    this.lastStealTime = now;
+
+    // 保存数据
+    this.saveData();
+    targetFarmer.saveData();
+
+    return `嗯哼~成功偷取到${crop}啦！`;
   }
-
-
-  // 检查目标农田中是否有成熟的作物
-  const matureFields = Object.keys(targetFarmer.crops).filter(field => {
-    return targetFarmer.crops[field].harvestTime <= now && !targetFarmer.crops[field].stolen;
-  });
-
-
-  if (matureFields.length === 0) {
-    return `这家人的田地中可没有成熟的作物，换个目标吧~`;
-  }
-
-  // 随机选择一块成熟的作物
-  const randomField = matureFields[Math.floor(Math.random() * matureFields.length)];
-  const seed = targetFarmer.crops[randomField].seed;
-  const crop = seed.replace("种子", "");
-
-  // 将偷窃的作物添加到偷窃者的仓库中
-  if (!this.warehouse[crop]) {
-    this.warehouse[crop] = 0;
-  }
-  this.warehouse[crop]++;
-
-
-  // 从被偷窃者的农田中删除被偷窃的作物
-  delete targetFarmer.crops[randomField];
-
-
-  // 更新偷窃者的上次偷窃时间
-  this.lastStealTime = now;
-
-  // 保存数据
-  this.saveData();
-  targetFarmer.saveData();
-
-  return `嗯哼~成功偷取到${crop}啦！`;
-}
 
   changeName(newName: string) {
     this.name = newName;
@@ -556,3 +649,298 @@ export class Farmer {
     return `成功丢弃${quantity}个${item}。`;
   }
 }
+
+//原fisher.ts
+export class Fisher extends Farmer {
+  // private farmer: Farmer;
+  private fishCount: number; // 记录钓鱼次数
+  private lastFishTime: number; // 记录上次钓鱼时间
+  private fishCooldown: number; // 钓鱼冷却时间
+  private wormCatchCount: number; // 记录抓蚯蚓次数
+  private explorationType: string | null; // 记录当前的远航类型
+  private explorationStartTime: number | null; // 记录远航开始时间
+
+  constructor(id:string,name:string) {
+    super(id,name)
+
+    this.fishCount = 0;
+    this.lastFishTime = 0;
+    this.fishCooldown = 0;
+    this.wormCatchCount = 0;
+    this.explorationType = null;
+    this.explorationStartTime = null;
+  }
+  static getData(id: string): Fisher | null {
+    try {
+      let fisherData = JSON.parse(seal.ext.find('我的农田插件').storageGet(id) || "{}");
+      if (Object.keys(fisherData).length === 0) {
+        return null;
+      }
+      let fisher = new Fisher(id, fisherData.name);
+      for(const key in fisherData) {
+        fisher[key]=fisherData[key] || fisher[key]
+      }
+      // farmer.fields = farmerData.fields || 6;
+      // farmer.money = farmerData.money || 200;
+      // farmer.level = farmerData.level || 1;
+      // farmer.experience = farmerData.experience || 0;
+      // farmer.crops = farmerData.crops || {};
+      // farmer.warehouse = farmerData.warehouse || { "防风草种子": 6 };
+      // farmer.lastStealTime = farmerData.lastStealTime || 0; // 确保 lastStealTime 被正确初始化
+      // farmer.lastSignInDate = farmerData.lastSignInDate || ""; // 初始化 lastSignInDate 属性
+      // farmer.purchasedFields = farmerData.purchasedFields || {}; // 初始化 purchasedFields 属性
+      // farmer.fishPond = farmerData.fishPond || 0; // 初始化 fishPond 属性
+      // farmer.lastFishPondRefresh = farmerData.lastFishPondRefresh || ""; // 初始化 lastFishPondRefresh 属性
+      return fisher;
+    } catch (error) {
+      return null;
+    }
+  }
+  private refreshFishPond() {
+    const now = new Date();
+    const today = now.toDateString();
+    if (this.lastFishPondRefresh !== today) {
+      this.fishPond = Math.floor(Math.random() * (25 - 15 + 1)) + 15;
+      this.lastFishPondRefresh = today;
+      this.saveData();
+    }
+  }
+
+  public fish(): string {
+    this.refreshFishPond();
+
+    const now = Date.now();
+
+    // 检查是否在冷却时间内
+    if (this.fishCooldown > 0 && now - this.lastFishTime < this.fishCooldown) {
+      const remainingTime = Math.ceil((this.fishCooldown - (now - this.lastFishTime)) / 60000);
+      return `鱼塘中的鱼儿都躲起来了，等一会儿再来吧！唔...我看看，还要${remainingTime}分钟后他们才会出现哦~`;
+    }
+
+    if (this.fishPond <= 0) {
+      return "鱼塘中的鱼已经没有了，明天再来吧~";
+    }
+
+    if (!this.warehouse["鱼饵"]) {
+      return "你还没有鱼饵呢，先去商店买点啦~";
+    }
+
+    this.warehouse["鱼饵"]--;
+    if (this.warehouse["鱼饵"] === 0) {
+      delete this.warehouse["鱼饵"];
+    }
+
+    const successRate = 0.4; // 40% 成功率
+    const success = Math.random() < successRate;
+
+    if (!success) {
+      this.fishPond--;
+      this.saveData();
+      this.fishCount++;
+      this.checkFishCooldown();
+      return "哎呀！鱼跑了...";
+    }
+
+    let fishType = "";
+    switch (this.level) {
+      case 4:
+        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼"]);
+        break;
+      case 5:
+        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼"]);
+        break;
+      case 6:
+        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼"]);
+        break;
+      case 7:
+        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼","罗非鱼","木跃鱼","狮子鱼","比目鱼","大比目鱼","午夜鲤鱼"]);
+        break;
+      // 其他等级可以继续添加
+      default:
+        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼","罗非鱼","木跃鱼","狮子鱼","比目鱼","大比目鱼","午夜鲤鱼","史莱姆鱼","虾虎鱼","红鲻鱼","青花鱼","狗鱼","虎纹鳟鱼","蓝铁饼鱼","沙鱼"])
+    }
+
+    if (!this.warehouse[fishType]) {
+      this.warehouse[fishType] = 0;
+    }
+    this.warehouse[fishType]++;
+    this.fishPond--;
+    this.saveData();
+    this.fishCount++;
+    this.checkFishCooldown();
+
+    return `等待...等待...成功钓到一条${fishType}！`;
+  }
+
+  private checkFishCooldown() {
+    if (this.fishCount >= 4 && this.fishCount <= 6) {
+      this.fishCooldown = Math.floor(Math.random() * (60 - 30 + 1) + 30) * 60 * 1000; // 30分钟到1小时不等的冷却时间
+      this.lastFishTime = Date.now();
+    } else if (this.fishCount > 6) {
+      this.fishCount = 0;
+      this.fishCooldown = 0;
+    }
+  }
+
+  private getRandomFishType(fishTypes: string[]): string {
+    return fishTypes[Math.floor(Math.random() * fishTypes.length)];
+  }
+
+  public catchWorms(): string {
+    if (this.level < 4) {
+      return "你的等级不够哦，再等等再来吧！";
+    }
+
+    const weatherManager = WeatherManager.getInstance();
+    const currentWeather = weatherManager.getCurrentWeather();
+
+    if (currentWeather !== WeatherType.Rainy) {
+      return "今天可没有蚯蚓出来啊...";
+    }
+
+    if (this.wormCatchCount >= 12) {
+      return "这里已经没有蚯蚓了...";
+    }
+
+    const successRate = 0.8; // 80% 成功率
+    const success = Math.random() < successRate;
+
+    if (success) {
+      if (!this.warehouse["鱼饵"]) {
+        this.warehouse["鱼饵"] = 0;
+      }
+      this.warehouse["鱼饵"]++;
+      this.wormCatchCount++;
+      this.saveData();
+      return "恭喜你捕捉到了蚯蚓！";
+    } else {
+      this.wormCatchCount++;
+      this.saveData();
+      return "你挖了半天土，都没找到蚯蚓，有点可怜啊~";
+    }
+  }
+
+  public getExplorationType(): string | null {
+    const explorationType = this.explorationType;
+    console.log(`读取 explorationType: ${explorationType}`);
+    return explorationType;
+  }
+
+  public explore(type: string): string {
+    // 检查是否处于远航状态
+    if (this.explorationType) {
+      const remainingTime = this.getExplorationRemainingTime();
+      console.log(`当前远航状态: ${this.explorationType}, 剩余时间: ${remainingTime}`);
+      return `你的船队正在探索中，让我看看...嗯，还有${remainingTime}才会回来哦~`;
+    }
+
+    const explorationTypes = {
+      "近海远航": { duration: 5 * 60 * 60 * 1000, cost: 1000, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
+      "远海探索": { duration: 8 * 60 * 60 * 1000, cost: 3000, reward: { minGold: 3200, maxGold: 4000, seeds: 15, fish: 5 } },
+      "随机探索": { duration: 12 * 60 * 60 * 1000, cost: 5000, reward: { minGold: 3000, maxGold: 8000, seeds: { min: 10, max: 20 }, fish: { min: 3, max: 10 } } }
+    };
+
+    const exploration = explorationTypes[type];
+    if (!exploration) {
+      return "选择远航类型：\n1.近海远航（5小时，1000金币）\n2.远海探索（8小时，3000金币）\n3.随机探索（12小时，5000金币）\n\n用“.远航<探索类型>开启远航吧！\n*远航结束后会来找你的！";
+    }
+
+    if (this.money < exploration.cost) {
+      return `你的金币不够进行${type}哦~`;
+    }
+
+    console.log(`存储前 explorationType: ${this.explorationType}, explorationStartTime: ${this.explorationStartTime}`);
+
+    this.money -= exploration.cost;
+    this.explorationType = type;
+    this.explorationStartTime = Date.now();
+    this.saveData();
+
+    console.log(`存储后 explorationType: ${this.explorationType}, explorationStartTime: ${this.explorationStartTime}`);
+
+    return `你的船队出航啦~`;
+  }
+
+  public getExplorationRemainingTime(): string {
+    if (!this.explorationType || !this.explorationStartTime) {
+      return "0秒";
+    }
+
+    const explorationTypes = {
+      "近海远航": 5 * 60 * 60 * 1000,
+      "远海探索": 8 * 60 * 60 * 1000,
+      "随机探索": 12 * 60 * 60 * 1000
+    };
+
+    const duration = explorationTypes[this.explorationType];
+    const elapsedTime = Date.now() - this.explorationStartTime;
+    const remainingTime = duration - elapsedTime;
+
+    if (remainingTime <= 0) {
+      return "0秒";
+    }
+
+    const hours = Math.floor(remainingTime / (60 * 60 * 1000));
+    const minutes = Math.floor((remainingTime % (60 * 60 * 1000)) / (60 * 1000));
+    const seconds = Math.floor((remainingTime % (60 * 1000)) / 1000);
+
+    return `${hours}小时${minutes}分钟${seconds}秒`;
+  }
+
+  public checkExplorationCompletion(): string {
+    if (!this.explorationType || !this.explorationStartTime) {
+      return "";
+    }
+
+    const explorationTypes = {
+      "近海远航": { duration: 5 * 60 * 60 * 1000, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
+      "远海探索": { duration: 8 * 60 * 60 * 1000, reward: { minGold: 3200, maxGold: 4000, seeds: 15, fish: 5 } },
+      "随机探索": { duration: 12 * 60 * 60 * 1000, reward: { minGold: 3000, maxGold: 8000, seeds: { min: 10, max: 20 }, fish: { min: 3, max: 10 } } }
+    };
+
+    const exploration = explorationTypes[this.explorationType];
+    const elapsedTime = Date.now() - this.explorationStartTime;
+
+    if (elapsedTime >= exploration.duration) {
+      const reward = exploration.reward;
+      const gold = Math.floor(Math.random() * (reward.maxGold - reward.minGold + 1)) + reward.minGold;
+      this.money += gold;
+
+      const seedTypes = Object.keys(globalStore).filter(item => item.endsWith("种子"));
+      const seedType = seedTypes[Math.floor(Math.random() * seedTypes.length)];
+      const seedQuantity = reward.seeds;
+
+      if (!this.warehouse[seedType]) {
+        this.warehouse[seedType] = 0;
+      }
+      this.warehouse[seedType] += seedQuantity;
+
+      let fishReward = "";
+      if (reward.fish) {
+        const fishTypes = Object.keys(this.warehouse).filter(item => this.isFish(item));
+        const fishType = fishTypes[Math.floor(Math.random() * fishTypes.length)];
+        const fishQuantity = reward.fish;
+
+        if (!this.warehouse[fishType]) {
+          this.warehouse[fishType] = 0;
+        }
+        this.warehouse[fishType] += fishQuantity;
+        fishReward = `和${fishType}×${fishQuantity}`;
+      }
+
+      this.explorationType = null;
+      this.explorationStartTime = null;
+      this.saveData();
+
+      return `你的船队归来啦，带回了${gold}金币、${seedType}×${seedQuantity}${fishReward}`;
+    }
+
+    return "";
+  }
+
+  public isFish(item: string): boolean {
+    const fishTypes = ["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼","罗非鱼","木跃鱼","狮子鱼","比目鱼","大比目鱼","午夜鲤鱼","史莱姆鱼","虾虎鱼","红鲻鱼","青花鱼","狗鱼","虎纹鳟鱼","蓝铁饼鱼","沙鱼"]; // 可以根据需要扩展
+    return fishTypes.includes(item);
+  }
+}
+

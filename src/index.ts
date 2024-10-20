@@ -1,8 +1,8 @@
 import { Farmer } from './farmer';
 import { CmdItemInfo } from './cmdItemInfo';
 import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
-import { Fisher } from './fisher'; // 导入 Fisher 类
 import { WeatherType } from './farmer';
+import { Fisher } from './farmer';
 
 (() => {
   // 定义 weatherManager 变量并初始化 WeatherManager 类的实例
@@ -36,6 +36,7 @@ import { WeatherType } from './farmer';
           const helpMessage = `
     农场指令帮助信息：
     .签到 - 签到并获得每日奖励
+
     .我的农田 - 查看我的农田信息
     .种植<农作物><数量> - 种植农作物（数量和物品间请加空格）
     .农田商店 - 查看农田商店
@@ -43,13 +44,17 @@ import { WeatherType } from './farmer';
     .出售 <商品名>（数量） - 出售商品（数量和物品间请加空格）
     .好友信息<@其他人> - 查看好友的农田信息
     .我的仓库 - 查看我的仓库
+
     .铲除农田<田地名> - 铲除农田中的作物
     .偷窃<@其他人> - 偷窃其他人的作物
     .收获 - 收获所有成熟的作物
     .丢弃 <物品名>（数目） - 丢弃物品（数量和物品间请加空格）
     .修改农夫名<新用户名> - 修改农夫名
     .使用肥料 <田地名> - 使用肥料缩短时间
+
+    .钓鱼 - 在鱼塘钓鱼
     .抓蚯蚓 - 抓蚯蚓转换为鱼饵
+    .远航 - 派遣船队远航探索
     .农场指令 - 查看农场指令帮助信息
     `;
           seal.replyToSender(ctx, msg, helpMessage);
@@ -211,6 +216,12 @@ import { WeatherType } from './farmer';
         solve: (ctx, msg, cmdArgs) => {
           let mctx = seal.getCtxProxyFirst(ctx, cmdArgs); // 修正拼写错误
           return handleFarmerCommand(mctx, msg, cmdArgs, (farmer) => {
+
+            //初始化用户变量
+            let id = msg.sender.userId;
+            //let name = msg.sender.nickname;
+            farmer = Farmer.getData(id);
+
             if (!farmer) {
               seal.replyToSender(ctx, msg, `你还不是农夫哦，试着用.成为农夫指令加入大家吧！`);
               return seal.ext.newCmdExecuteResult(true);
@@ -258,30 +269,30 @@ import { WeatherType } from './farmer';
       };
 
       const cmdDiscardItem: CmdItemInfo = {
-  name: "丢弃",
-  help: "指令：.丢弃 <物品名>（数目）",
-  solve: (ctx, msg, cmdArgs) => {
-    return handleFarmerCommand(ctx, msg, cmdArgs, (farmer) => {
-      if (!farmer) {
-        seal.replyToSender(ctx, msg, `你还不是农夫哦，试着用.成为农夫指令加入大家吧！`);
-        return seal.ext.newCmdExecuteResult(true);
-      }
-      let item = cmdArgs.getArgN(1);
-      let quantity = parseInt(cmdArgs.getArgN(2)) || 1;
+        name: "丢弃",
+        help: "指令：.丢弃 <物品名>（数目）",
+        solve: (ctx, msg, cmdArgs) => {
+          return handleFarmerCommand(ctx, msg, cmdArgs, (farmer) => {
+            if (!farmer) {
+              seal.replyToSender(ctx, msg, `你还不是农夫哦，试着用.成为农夫指令加入大家吧！`);
+              return seal.ext.newCmdExecuteResult(true);
+            }
+            let item = cmdArgs.getArgN(1);
+            let quantity = parseInt(cmdArgs.getArgN(2)) || 1;
 
-      // 打印日志，确认物品名和数量
-      console.log(`丢弃指令: 物品: ${item}, 数量: ${quantity}`);
+            // 打印日志，确认物品名和数量
+            console.log(`丢弃指令: 物品: ${item}, 数量: ${quantity}`);
 
-      let result = farmer.discardItem(item, quantity);
+            let result = farmer.discardItem(item, quantity);
 
-      // 打印日志，确认丢弃结果
-      console.log(`丢弃结果: ${result}`);
+            // 打印日志，确认丢弃结果
+            console.log(`丢弃结果: ${result}`);
 
-      seal.replyToSender(ctx, msg, result);
-      return seal.ext.newCmdExecuteResult(true);
-    });
-  }
-};
+            seal.replyToSender(ctx, msg, result);
+            return seal.ext.newCmdExecuteResult(true);
+          });
+        }
+      };
 
       const cmdChangeName: CmdItemInfo = {
         name: "修改农夫名",
@@ -411,13 +422,41 @@ import { WeatherType } from './farmer';
               seal.replyToSender(ctx, msg, `你还不是农夫哦，试着用.成为农夫指令加入大家吧！`);
               return seal.ext.newCmdExecuteResult(true);
             }
-            const fisher = new Fisher(farmer);
+            const fisher = Fisher.getData(farmer.id);
             const result = fisher.catchWorms();
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
         }
       };
+
+      const cmdExplore: CmdItemInfo = {
+        name: "远航",
+        help: "指令：.远航",
+        solve: (ctx, msg, cmdArgs) => {
+          return handleFarmerCommand(ctx, msg, cmdArgs, (farmer) => {
+            if (!farmer) {
+              seal.replyToSender(ctx, msg, `你还不是农夫哦，试着用.成为农夫指令加入大家吧！`);
+              return seal.ext.newCmdExecuteResult(true);
+            }
+
+            const fisher = Fisher.getData(farmer.id);
+            const explorationType = fisher.getExplorationType(); // 获取当前的远航类型
+
+            if (explorationType) {
+              const remainingTime = fisher.getExplorationRemainingTime();
+              console.log(`当前远航状态: ${explorationType}, 剩余时间: ${remainingTime}`);
+              seal.replyToSender(ctx, msg, `你的船队正在探索中，让我看看...嗯，还有${remainingTime}才会回来哦~`);
+              return seal.ext.newCmdExecuteResult(true);
+            }
+
+            const result = fisher.explore(cmdArgs.getArgN(1));
+            seal.replyToSender(ctx, msg, result);
+            return seal.ext.newCmdExecuteResult(true);
+          });
+        }
+      };
+
 
       ext.cmdMap["成为农夫"] = cmdBecomeFarmer;
       ext.cmdMap["农场指令"] = cmdFarmCommands;
@@ -437,14 +476,15 @@ import { WeatherType } from './farmer';
       ext.cmdMap["签到"] = cmdSignIn;
       ext.cmdMap["钓鱼"] = cmdFish;
       ext.cmdMap["抓蚯蚓"] = cmdCatchWorms;
+      ext.cmdMap["远航"] = cmdExplore;
 
       seal.ext.register(ext);
     }
   }
 
   function handleFarmerCommand(ctx: seal.MsgContext, msg: seal.Message, cmdArgs: seal.CmdArgs, callback: (farmer: Farmer | null, id: string, name: string) => seal.CmdExecuteResult) {
-    let id = msg.sender.userId;
-    let name = msg.sender.nickname;
+    let id = ctx.player.userId;
+    let name = ctx.player.name;
     let farmer = Farmer.getData(id);
     return callback(farmer, id, name);
   }
