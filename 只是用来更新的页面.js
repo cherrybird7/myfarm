@@ -7,7 +7,7 @@
 // @license      Apache-2.0
 // @homepageURL  https://github.com/bugtower100/myfarm
 // @updateUrl    https://raw.githubusercontent.com/bugtower100/myfarm/refs/heads/master/%E5%8F%AA%E6%98%AF%E7%94%A8%E6%9D%A5%E6%9B%B4%E6%96%B0%E7%9A%84%E9%A1%B5%E9%9D%A2.js
-// ==/UserScript==
+// ==UserScript==
 
 (() => {
   // src/weatherManager.ts
