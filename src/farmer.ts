@@ -110,9 +110,7 @@ export class Farmer {
   static getData(id: string): Farmer | null {
     try {
       let farmerData = JSON.parse(seal.ext.find('我的农田插件').storageGet(id) || "{}");
-      console.log(`加载数据: ${JSON.stringify(farmerData)}`);
       if (Object.keys(farmerData).length === 0) {
-        console.log(`加载数据为空: ${id}`);
         return null;
       }
       let farmer = new Farmer(id, farmerData.name);
@@ -127,16 +125,13 @@ export class Farmer {
       farmer.purchasedFields = farmerData.purchasedFields || {}; // 初始化 purchasedFields 属性
       farmer.fishPond = farmerData.fishPond || 0; // 初始化 fishPond 属性
       farmer.lastFishPondRefresh = farmerData.lastFishPondRefresh || ""; // 初始化 lastFishPondRefresh 属性
-      console.log(`初始化后的农夫数据: ${JSON.stringify(farmer)}`);
       return farmer;
     } catch (error) {
-      console.error(`Failed to initialize ${id}:`, error);
       return null;
     }
   }
 
   saveData() {
-    console.log(`保存数据: ${JSON.stringify(this)}`);
     seal.ext.find('我的农田插件').storageSet(this.id.toString(), JSON.stringify(this));
   }
 
@@ -205,17 +200,13 @@ export class Farmer {
     let harvestedCrops = {};
     let totalMoney = 0;
     let totalExperience = 0;
-    console.log(`当前时间: ${now}`);
-    console.log(`当前田地: ${JSON.stringify(this.crops)}`);
     for (let field in this.crops) {
-      console.log(`检查 ${field}: ${JSON.stringify(this.crops[field])}`);
       if (this.crops[field].harvestTime <= now && !this.crops[field].stolen) {
         let seed = this.crops[field].seed;
         let crop = seed.replace("种子", "");
         let seedPrice = globalStore[seed].price;
-        let cropPrice = seedPrice * 1.25;
+        let cropPrice = seedPrice * 0.5
         let experience = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
-        console.log(` ${field} 的作物已成熟: ${crop}`);
         if (!harvestedCrops[crop]) {
           harvestedCrops[crop] = 0;
         }
@@ -246,7 +237,6 @@ export class Farmer {
     if (levelUpMessage) {
       result += `\n${levelUpMessage}`;
     }
-    console.log(result);
     return result;
   }
 
@@ -254,14 +244,13 @@ export class Farmer {
     if (field === "all") {
       return this.harvestAllCrops();
     }
-    console.log(`检查 ${field}: ${JSON.stringify(this.crops[field])}`);
     if (!this.crops[field] || this.crops[field].harvestTime > (/* @__PURE__ */ new Date()).getTime() || this.crops[field].stolen) {
       return `${field}还没有成熟作物哦！`;
     }
     let seed = this.crops[field].seed;
     let crop = seed.replace("种子", "");
     let seedPrice = globalStore[seed].price;
-    let cropPrice = seedPrice * 1.25;
+    let cropPrice = seedPrice * 0.5;
     let experience = Math.floor(Math.random() * (20 - 10 + 1)) + 10;
     this.money += cropPrice;
     this.experience += experience;
@@ -278,7 +267,6 @@ export class Farmer {
     if (levelUpMessage) {
       result += `\n${levelUpMessage}`;
     }
-    console.log(result);
     return result;
   }
 
@@ -398,7 +386,6 @@ export class Farmer {
     delete this.warehouse[item];
   }
   this.saveData();
-  console.log(`出售物品: ${item}, 数量: ${quantity}, 单价: ${sellPrice}, 总价: ${totalSellPrice}`);
   return `成功出售${item}${quantity}个，获得${totalSellPrice}金币~`;
 }
   // 新增方法：判断是否为鱼类物品
@@ -410,11 +397,38 @@ export class Farmer {
   // 新增方法：获取鱼类物品的售价
   private getFishPrice(item: string): number {
     const fishPrices = {
-      "鳀鱼": 50,
-      "沙丁鱼": 60,
-      "鲷鱼": 100,
-      "大嘴鲈鱼": 150,
-      "鲤鱼": 30
+      "鲤鱼":20,
+      "鲱鱼":30,
+      "小嘴鲈鱼":30,
+      "太阳鱼":45,
+      "鳀鱼":45,
+      "沙丁鱼":45,
+      "河鲈":50,
+      "鲢鱼":50,
+      "鲷鱼":50,
+      "红鲷鱼":55,
+      "海参":55,
+      "虹鳟鱼":55,
+      "大眼鱼":60,
+      "西鲱":60,
+      "大头鱼":60,
+      "大嘴鲈鱼":60,
+      "鲑鱼":60,
+      "鬼鱼":65,
+      "罗非鱼":65,
+      "木跃鱼":65,
+      "狮子鱼":65,
+      "比目鱼":70,
+      "大比目鱼":70,
+      "午夜鲤鱼":70,
+      "史莱姆鱼":70,
+      "虾虎鱼":70,
+      "红鲻鱼":75,
+      "青花鱼":75,
+      "狗鱼":75,
+      "虎纹鳟鱼":75,
+      "蓝铁饼鱼":75,
+      "沙鱼":75
     }; // 可以根据需要扩展
     return fishPrices[item] || 0;
   }
@@ -453,8 +467,6 @@ export class Farmer {
     return targetFarmer.crops[field].harvestTime <= now && !targetFarmer.crops[field].stolen;
   });
 
-  // 打印成熟的作物信息
-  console.log(`成熟的作物信息: ${JSON.stringify(matureFields)}`);
 
   if (matureFields.length === 0) {
     return `这家人的田地中可没有成熟的作物，换个目标吧~`;
