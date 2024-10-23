@@ -453,6 +453,9 @@ export class Farmer {
       return `请输入有效的出售数量。`;
     }
 
+    if (item === "肥料") {
+      return `不好意思，本店不收肥料哦~`;
+    }
     if (!this.warehouse[item]) {
       return `你的仓库中没有${item}哦`;
     }
@@ -483,7 +486,7 @@ export class Farmer {
   }
   // 新增方法：判断是否为鱼类物品
   public isFish(item: string): boolean {
-    const fishTypes = ["鳀鱼", "沙丁鱼", "鲷鱼", "大嘴鲈鱼", "鲤鱼"]; // 可以根据需要扩展
+    const fishTypes = ["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼", "大眼鱼", "西鲱", "大头鱼", "大嘴鲈鱼", "鲑鱼", "鬼鱼", "罗非鱼", "木跃鱼", "狮子鱼", "比目鱼", "大比目鱼", "午夜鲤鱼", "史莱姆鱼", "虾虎鱼", "红鲻鱼", "青花鱼", "狗鱼", "虎纹鳟鱼", "蓝铁饼鱼", "沙鱼"]; // 可以根据需要扩展
     return fishTypes.includes(item);
   }
 
@@ -653,19 +656,13 @@ export class Farmer {
 //原fisher.ts
 export class Fisher extends Farmer {
   // private farmer: Farmer;
-  private fishCount: number; // 记录钓鱼次数
-  private lastFishTime: number; // 记录上次钓鱼时间
-  private fishCooldown: number; // 钓鱼冷却时间
   private wormCatchCount: number; // 记录抓蚯蚓次数
   private explorationType: string | null; // 记录当前的远航类型
   private explorationStartTime: number | null; // 记录远航开始时间
 
-  constructor(id:string,name:string) {
-    super(id,name)
+  constructor(id: string, name: string) {
+    super(id, name)
 
-    this.fishCount = 0;
-    this.lastFishTime = 0;
-    this.fishCooldown = 0;
     this.wormCatchCount = 0;
     this.explorationType = null;
     this.explorationStartTime = null;
@@ -677,8 +674,8 @@ export class Fisher extends Farmer {
         return null;
       }
       let fisher = new Fisher(id, fisherData.name);
-      for(const key in fisherData) {
-        fisher[key]=fisherData[key] || fisher[key]
+      for (const key in fisherData) {
+        fisher[key] = fisherData[key] || fisher[key]
       }
       // farmer.fields = farmerData.fields || 6;
       // farmer.money = farmerData.money || 200;
@@ -709,14 +706,6 @@ export class Fisher extends Farmer {
   public fish(): string {
     this.refreshFishPond();
 
-    const now = Date.now();
-
-    // 检查是否在冷却时间内
-    if (this.fishCooldown > 0 && now - this.lastFishTime < this.fishCooldown) {
-      const remainingTime = Math.ceil((this.fishCooldown - (now - this.lastFishTime)) / 60000);
-      return `鱼塘中的鱼儿都躲起来了，等一会儿再来吧！唔...我看看，还要${remainingTime}分钟后他们才会出现哦~`;
-    }
-
     if (this.fishPond <= 0) {
       return "鱼塘中的鱼已经没有了，明天再来吧~";
     }
@@ -730,56 +719,57 @@ export class Fisher extends Farmer {
       delete this.warehouse["鱼饵"];
     }
 
-    const successRate = 0.4; // 40% 成功率
+    const successRate = 0.55; // 55% 成功率
     const success = Math.random() < successRate;
 
     if (!success) {
-      this.fishPond--;
+      this.fishPond -= 0.5
       this.saveData();
-      this.fishCount++;
-      this.checkFishCooldown();
       return "哎呀！鱼跑了...";
     }
 
     let fishType = "";
     switch (this.level) {
       case 4:
-        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼"]);
+        fishType = this.getRandomFishType(["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼"]);
         break;
       case 5:
-        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼"]);
+        fishType = this.getRandomFishType(["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼"]);
         break;
       case 6:
-        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼"]);
+        fishType = this.getRandomFishType(["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼", "大眼鱼", "西鲱", "大头鱼", "大嘴鲈鱼", "鲑鱼", "鬼鱼"]);
         break;
       case 7:
-        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼","罗非鱼","木跃鱼","狮子鱼","比目鱼","大比目鱼","午夜鲤鱼"]);
+        fishType = this.getRandomFishType(["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼", "大眼鱼", "西鲱", "大头鱼", "大嘴鲈鱼", "鲑鱼", "鬼鱼", "罗非鱼", "木跃鱼", "狮子鱼", "比目鱼", "大比目鱼", "午夜鲤鱼"]);
         break;
       // 其他等级可以继续添加
       default:
-        fishType = this.getRandomFishType(["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼","罗非鱼","木跃鱼","狮子鱼","比目鱼","大比目鱼","午夜鲤鱼","史莱姆鱼","虾虎鱼","红鲻鱼","青花鱼","狗鱼","虎纹鳟鱼","蓝铁饼鱼","沙鱼"])
+        fishType = this.getRandomFishType(["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼", "大眼鱼", "西鲱", "大头鱼", "大嘴鲈鱼", "鲑鱼", "鬼鱼", "罗非鱼", "木跃鱼", "狮子鱼", "比目鱼", "大比目鱼", "午夜鲤鱼", "史莱姆鱼", "虾虎鱼", "红鲻鱼", "青花鱼", "狗鱼", "虎纹鳟鱼", "蓝铁饼鱼", "沙鱼"])
     }
+
+    // 生成鱼的长度
+    const lengthProbability = Math.random();
+    let fishLength: number;
+    if (lengthProbability < 0.7) {
+      fishLength = parseFloat((Math.random() * (3 - 2) + 2).toFixed(1)); // 2-3尺长
+    } else if (lengthProbability < 0.8) {
+      fishLength = parseFloat((Math.random() * (2 - 1) + 1).toFixed(1)); // 1-2尺长
+    } else if (lengthProbability < 0.9) {
+      fishLength = parseFloat((Math.random() * (4 - 3) + 3).toFixed(1)); // 3-4尺长
+    } else if (lengthProbability < 0.95) {
+      fishLength = parseFloat((Math.random() * (6 - 5) + 5).toFixed(1)); // 5-6尺长
+    } else {
+      fishLength = parseFloat((Math.random() * (1 - 0) + 0).toFixed(1)); // 0-1尺长
+    }
+
 
     if (!this.warehouse[fishType]) {
       this.warehouse[fishType] = 0;
     }
     this.warehouse[fishType]++;
-    this.fishPond--;
+    this.fishPond--
     this.saveData();
-    this.fishCount++;
-    this.checkFishCooldown();
-
-    return `等待...等待...成功钓到一条${fishType}！`;
-  }
-
-  private checkFishCooldown() {
-    if (this.fishCount >= 4 && this.fishCount <= 6) {
-      this.fishCooldown = Math.floor(Math.random() * (60 - 30 + 1) + 30) * 60 * 1000; // 30分钟到1小时不等的冷却时间
-      this.lastFishTime = Date.now();
-    } else if (this.fishCount > 6) {
-      this.fishCount = 0;
-      this.fishCooldown = 0;
-    }
+    return `等待...等待...成功钓到一条长度为${fishLength}尺的${fishType}！`;
   }
 
   private getRandomFishType(fishTypes: string[]): string {
@@ -861,6 +851,7 @@ export class Fisher extends Farmer {
     return `你的船队出航啦~`;
   }
 
+
   public getExplorationRemainingTime(): string {
     if (!this.explorationType || !this.explorationStartTime) {
       return "0秒";
@@ -877,7 +868,8 @@ export class Fisher extends Farmer {
     const remainingTime = duration - elapsedTime;
 
     if (remainingTime <= 0) {
-      return "0秒";
+      // 当 remainingTime 为 0 时，调用 checkExplorationCompletion() 方法
+      return this.checkExplorationCompletion();
     }
 
     const hours = Math.floor(remainingTime / (60 * 60 * 1000));
@@ -931,15 +923,16 @@ export class Fisher extends Farmer {
       this.explorationType = null;
       this.explorationStartTime = null;
       this.saveData();
+      let idnumber = Number(this.id)
 
-      return `你的船队归来啦，带回了${gold}金币、${seedType}×${seedQuantity}${fishReward}`;
+      return `[CQ:at,qq=${idnumber}]你的船队归来啦，带回了${gold}金币、${seedType}×${seedQuantity}mp${fishReward}`;
     }
 
     return "";
   }
 
   public isFish(item: string): boolean {
-    const fishTypes = ["鲤鱼","鲱鱼", "小嘴鲈鱼", "太阳鱼","鳀鱼","沙丁鱼", "河鲈", "鲢鱼", "鲷鱼","红鲷鱼","海参","虹鳟鱼","大眼鱼","西鲱","大头鱼","大嘴鲈鱼","鲑鱼","鬼鱼","罗非鱼","木跃鱼","狮子鱼","比目鱼","大比目鱼","午夜鲤鱼","史莱姆鱼","虾虎鱼","红鲻鱼","青花鱼","狗鱼","虎纹鳟鱼","蓝铁饼鱼","沙鱼"]; // 可以根据需要扩展
+    const fishTypes = ["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼", "大眼鱼", "西鲱", "大头鱼", "大嘴鲈鱼", "鲑鱼", "鬼鱼", "罗非鱼", "木跃鱼", "狮子鱼", "比目鱼", "大比目鱼", "午夜鲤鱼", "史莱姆鱼", "虾虎鱼", "红鲻鱼", "青花鱼", "狗鱼", "虎纹鳟鱼", "蓝铁饼鱼", "沙鱼"]; // 可以根据需要扩展
     return fishTypes.includes(item);
   }
 }

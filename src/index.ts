@@ -456,7 +456,8 @@ import { Fisher } from './farmer';
           });
         }
       };
-
+      
+      
 
       ext.cmdMap["成为农夫"] = cmdBecomeFarmer;
       ext.cmdMap["农场指令"] = cmdFarmCommands;
