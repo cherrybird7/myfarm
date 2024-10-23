@@ -219,7 +219,7 @@ declare namespace seal {
   }
 
 
-  interface CmdItemInfo {
+  export interface CmdItemInfo {
     solve: (ctx: MsgContext, msg: Message, cmdArgs: CmdArgs) => CmdExecuteResult;
 
     /** 指令名称 */

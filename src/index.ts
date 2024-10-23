@@ -1,5 +1,4 @@
 import { Farmer } from './farmer';
-import { CmdItemInfo } from './cmdItemInfo';
 import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
 import { WeatherType } from './farmer';
 import { Fisher } from './farmer';
@@ -12,7 +11,7 @@ import { Fisher } from './farmer';
     if (!seal.ext.find("我的农田插件")) {
       const ext = seal.ext.new("我的农田插件", "bug人@", "1.0.0");
 
-      const cmdBecomeFarmer: CmdItemInfo = {
+      const cmdBecomeFarmer: seal.CmdItemInfo = {
         name: "成为农夫",
         help: "指令：.成为农夫",
         solve: (ctx, msg, cmdArgs) => {
@@ -26,13 +25,15 @@ import { Fisher } from './farmer';
             }
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdFarmCommands: CmdItemInfo = {
+      const cmdFarmCommands: seal.CmdItemInfo = {
         name: "农场指令",
         help: "指令：.农场指令",
-        solve: (ctx, msg, cmdArgs) => {
+        solve: (ctx, msg) => {
           const helpMessage = `
     农场指令帮助信息：
     .签到 - 签到并获得每日奖励
@@ -59,10 +60,12 @@ import { Fisher } from './farmer';
     `;
           seal.replyToSender(ctx, msg, helpMessage);
           return seal.ext.newCmdExecuteResult(true);
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdFarmInfo: CmdItemInfo = {
+      const cmdFarmInfo: seal.CmdItemInfo = {
         name: "我的农田",
         help: "指令：.我的农田",
         solve: (ctx, msg, cmdArgs) => {
@@ -88,10 +91,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, replyMessage);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdPlantCrop: CmdItemInfo = {
+      const cmdPlantCrop: seal.CmdItemInfo = {
         name: "种植",
         help: "指令：.种植<农作物><数量>",
         solve: (ctx, msg, cmdArgs) => {
@@ -109,10 +114,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.plantCrop(crop, quantity));
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdStoreInfo: CmdItemInfo = {
+      const cmdStoreInfo: seal.CmdItemInfo = {
         name: "农田商店",
         help: "指令：.农田商店",
         solve: (ctx, msg, cmdArgs) => {
@@ -124,10 +131,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.getStoreInfo());
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdBuyItem: CmdItemInfo = {
+      const cmdBuyItem: seal.CmdItemInfo = {
         name: "购买",
         help: "指令：.购买 <商品名>（数量）",
         solve: (ctx, msg, cmdArgs) => {
@@ -141,10 +150,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.buyItem(item, quantity));
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdSellItem: CmdItemInfo = {
+      const cmdSellItem: seal.CmdItemInfo = {
         name: "出售",
         help: "指令：.出售 <商品名>（数量）",
         solve: (ctx, msg, cmdArgs) => {
@@ -158,10 +169,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.sellItem(item, quantity));
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdOtherFarmInfo: CmdItemInfo = {
+      const cmdOtherFarmInfo: seal.CmdItemInfo = {
         name: "好友信息",
         help: "指令：.好友信息<其他人>",
         allowDelegate: true,
@@ -175,10 +188,11 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.getFarmInfo());
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        disabledInPrivate: false
       };
 
-      const cmdWarehouseInfo: CmdItemInfo = {
+      const cmdWarehouseInfo: seal.CmdItemInfo = {
         name: "我的仓库",
         help: "指令：.我的仓库",
         solve: (ctx, msg, cmdArgs) => {
@@ -190,10 +204,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.getWarehouseInfo());
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdRemoveCrop: CmdItemInfo = {
+      const cmdRemoveCrop: seal.CmdItemInfo = {
         name: "铲除农田",
         help: "指令：.铲除农田<序号>",
         solve: (ctx, msg, cmdArgs) => {
@@ -206,10 +222,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.removeCrop(field));
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdStealCrop: CmdItemInfo = {
+      const cmdStealCrop: seal.CmdItemInfo = {
         name: "偷窃",
         help: "指令：.偷窃<其他人>",
         allowDelegate: true,
@@ -237,7 +255,7 @@ import { Fisher } from './farmer';
               return seal.ext.newCmdExecuteResult(true);
             }
 
-            let now = (/* @__PURE__ */ new Date()).getTime();
+            let now = ( /* @__PURE__ */new Date()).getTime();
             if (farmer.getLastStealTime() != 0 && now - farmer.getLastStealTime() < 6e4) {
               let remainingTime = Math.ceil((6e4 - (now - farmer.getLastStealTime())) / 1e3);
               seal.replyToSender(ctx, msg, `附近还有人看着呢，再等${remainingTime}秒后再试吧...`);
@@ -249,10 +267,11 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        disabledInPrivate: false
       };
 
-      const cmdHarvestCrop: CmdItemInfo = {
+      const cmdHarvestCrop: seal.CmdItemInfo = {
         name: "收获",
         help: "指令：.收获",
         solve: (ctx, msg, cmdArgs) => {
@@ -265,10 +284,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, farmer.harvestCrop("all"));
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdDiscardItem: CmdItemInfo = {
+      const cmdDiscardItem: seal.CmdItemInfo = {
         name: "丢弃",
         help: "指令：.丢弃 <物品名>（数目）",
         solve: (ctx, msg, cmdArgs) => {
@@ -291,10 +312,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdChangeName: CmdItemInfo = {
+      const cmdChangeName: seal.CmdItemInfo = {
         name: "修改农夫名",
         help: "指令：.修改农夫名<新用户名>",
         solve: (ctx, msg, cmdArgs) => {
@@ -308,10 +331,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdUseFertilizer: CmdItemInfo = {
+      const cmdUseFertilizer: seal.CmdItemInfo = {
         name: "使用肥料",
         help: "指令：.使用肥料 <田地序号>",
         solve: (ctx, msg, cmdArgs) => {
@@ -325,10 +350,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdSignIn: CmdItemInfo = {
+      const cmdSignIn: seal.CmdItemInfo = {
         name: "签到",
         help: "指令：.签到",
         solve: (ctx, msg, cmdArgs) => {
@@ -394,10 +421,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, signInMessage);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdFish: CmdItemInfo = {
+      const cmdFish: seal.CmdItemInfo = {
         name: "钓鱼",
         help: "指令：.钓鱼",
         solve: (ctx, msg, cmdArgs) => {
@@ -410,10 +439,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdCatchWorms: CmdItemInfo = {
+      const cmdCatchWorms: seal.CmdItemInfo = {
         name: "抓蚯蚓",
         help: "指令：.抓蚯蚓",
         solve: (ctx, msg, cmdArgs) => {
@@ -427,10 +458,12 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
 
-      const cmdExplore: CmdItemInfo = {
+      const cmdExplore: seal.CmdItemInfo = {
         name: "远航",
         help: "指令：.远航",
         solve: (ctx, msg, cmdArgs) => {
@@ -454,7 +487,9 @@ import { Fisher } from './farmer';
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
-        }
+        },
+        allowDelegate: false,
+        disabledInPrivate: false
       };
       
       
