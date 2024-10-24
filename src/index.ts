@@ -1,7 +1,5 @@
-import { Farmer } from './farmer';
+import { Farmer,Fisher,WeatherType } from './farmer';
 import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
-import { WeatherType } from './farmer';
-import { Fisher } from './farmer';
 
 (() => {
   // 定义 weatherManager 变量并初始化 WeatherManager 类的实例
@@ -10,7 +8,36 @@ import { Fisher } from './farmer';
   function main() {
     if (!seal.ext.find("我的农田插件")) {
       const ext = seal.ext.new("我的农田插件", "bug人@", "1.0.0");
-
+      const nowTime = Date.now().toString()
+      ext.storageSet('taskId',nowTime)
+      const Check = () => {
+        const ext = seal.ext.find("我的农田插件")
+        setTimeout(() => {
+          // console.log(ext.storageGet('taskId'),nowTime)
+          if (ext.storageGet('taskId')===nowTime) {
+            Check()
+            const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
+            const data:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = str ? JSON.parse(str):[]
+            const resData:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = []
+            data.forEach(v => {
+              // console.log(v.reachTime,Date.now())
+              if (v.reachTime<Date.now()) {
+                const fisher = Fisher.getData(v.userId)
+                // console.log((fisher.id))
+                const replyStr = fisher.checkExplorationCompletion()
+                seal.replyToSender(v.replyCtx[0],v.replyCtx[1],replyStr)
+              } else {
+                resData.push(v)
+              }
+            })
+            // console.log(JSON.stringify(data))
+            if (data.length!==resData.length) {
+              seal.ext.find('我的农田插件').storageSet('VoyageTasks',JSON.stringify(resData))
+            }
+          }
+        },5000)
+      }
+      Check()
       const cmdBecomeFarmer: seal.CmdItemInfo = {
         name: "成为农夫",
         help: "指令：.成为农夫",
@@ -479,11 +506,15 @@ import { Fisher } from './farmer';
             if (explorationType) {
               const remainingTime = fisher.getExplorationRemainingTime();
               console.log(`当前远航状态: ${explorationType}, 剩余时间: ${remainingTime}`);
-              seal.replyToSender(ctx, msg, `你的船队正在探索中，让我看看...嗯，还有${remainingTime}才会回来哦~`);
+              if (remainingTime.includes('秒')) {
+                seal.replyToSender(ctx, msg, `你的船队正在探索中，让我看看...嗯，还有${remainingTime}才会回来哦~`);
+              } else {
+                seal.replyToSender(ctx,msg, remainingTime)
+              }
               return seal.ext.newCmdExecuteResult(true);
             }
 
-            const result = fisher.explore(cmdArgs.getArgN(1));
+            const result = fisher.explore(cmdArgs.getArgN(1),ctx,msg);
             seal.replyToSender(ctx, msg, result);
             return seal.ext.newCmdExecuteResult(true);
           });
