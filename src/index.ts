@@ -9,12 +9,14 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
     if (!seal.ext.find("我的农田插件")) {
       const ext = seal.ext.new("我的农田插件", "bug人@", "1.0.0");
       const nowTime = Date.now().toString()
-      ext.storageSet('taskId',nowTime)
+      setTimeout(() => {
+        ext.storageSet('taskId',nowTime)
+      },500)
       const Check = () => {
         const ext = seal.ext.find("我的农田插件")
         setTimeout(() => {
           // console.log(ext.storageGet('taskId'),nowTime)
-          if (ext.storageGet('taskId')===nowTime) {
+          if (ext&&ext.storageGet&&typeof ext.storageGet === 'function'&&ext.storageGet('taskId')===nowTime) {
             Check()
             const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
             const data:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = str ? JSON.parse(str):[]
