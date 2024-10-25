@@ -13,29 +13,34 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
         ext.storageSet('taskId',nowTime)
       },500)
       const Check = () => {
-        const ext = seal.ext.find("我的农田插件")
         setTimeout(() => {
+          const ext = seal.ext.find("我的农田插件")
           // console.log(ext.storageGet('taskId'),nowTime)
-          if (ext&&ext.storageGet&&typeof ext.storageGet === 'function'&&ext.storageGet('taskId')===nowTime) {
-            Check()
-            const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
-            const data:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = str ? JSON.parse(str):[]
-            const resData:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = []
-            data.forEach(v => {
-              // console.log(v.reachTime,Date.now())
-              if (v.reachTime<Date.now()) {
-                const fisher = Fisher.getData(v.userId)
-                // console.log((fisher.id))
-                const replyStr = fisher.checkExplorationCompletion()
-                seal.replyToSender(v.replyCtx[0],v.replyCtx[1],replyStr)
-              } else {
-                resData.push(v)
+          try{
+            if (ext&&ext.storageGet&&typeof ext.storageGet === 'function'&&ext.storageGet('taskId')===nowTime) {
+              console.log(Date.now())
+              Check()
+              const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
+              const data:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = str ? JSON.parse(str):[]
+              const resData:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = []
+              data.forEach(v => {
+                console.log(JSON.stringify(v))
+                if (v.reachTime<Date.now()) {
+                  const fisher = Fisher.getData(v.userId)
+                  // console.log((fisher.id))
+                  const replyStr = fisher.checkExplorationCompletion()
+                  seal.replyToSender(v.replyCtx[0],v.replyCtx[1],replyStr)
+                } else {
+                  resData.push(v)
+                }
+              })
+              // console.log(JSON.stringify(data))
+              if (data.length!==resData.length) {
+                seal.ext.find('我的农田插件').storageSet('VoyageTasks',JSON.stringify(resData))
               }
-            })
-            // console.log(JSON.stringify(data))
-            if (data.length!==resData.length) {
-              seal.ext.find('我的农田插件').storageSet('VoyageTasks',JSON.stringify(resData))
             }
+          }catch(e) {
+            console.log('err',e)
           }
         },5000)
       }
