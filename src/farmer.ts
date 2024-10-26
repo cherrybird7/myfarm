@@ -691,6 +691,7 @@ export class Fisher extends Farmer {
       // farmer.lastFishPondRefresh = farmerData.lastFishPondRefresh || ""; // 初始化 lastFishPondRefresh 属性
       return fisher;
     } catch (error) {
+      console.log(error)
       return null;
     }
   }
@@ -826,6 +827,7 @@ export class Fisher extends Farmer {
     }
 
     const explorationTypes = {
+      // "测试远航": { duration: 10, cost: 0, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "近海远航": { duration: 5 * 60 * 60 * 1000, cost: 1000, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "远海探索": { duration: 8 * 60 * 60 * 1000, cost: 3000, reward: { minGold: 3200, maxGold: 4000, seeds: 15, fish: 5 } },
       "随机探索": { duration: 12 * 60 * 60 * 1000, cost: 5000, reward: { minGold: 3000, maxGold: 8000, seeds: { min: 10, max: 20 }, fish: { min: 3, max: 10 } } }
@@ -847,11 +849,11 @@ export class Fisher extends Farmer {
     this.explorationStartTime = Date.now();
     this.saveData();
     const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
-    const data:{reachTime:number,userId:string,replyCtx: [seal.MsgContext,seal.Message]}[] = str ? JSON.parse(str):[]
+    const data:{reachTime:number,userId:string,replyCtx: [string,string,string,string,boolean]}[] = str ? JSON.parse(str):[]
     data.push({
       reachTime: Date.now() + exploration.duration,
       userId: this.id,
-      replyCtx: [ctx, msg]
+      replyCtx: [ctx.endPoint.userId, msg.guildId, msg.groupId, msg.sender.userId, (msg.messageType === "private")]
     })
     seal.ext.find('我的农田插件').storageSet('VoyageTasks',JSON.stringify(data))
     console.log(`存储后 explorationType: ${this.explorationType}, explorationStartTime: ${this.explorationStartTime}`);
@@ -894,6 +896,7 @@ export class Fisher extends Farmer {
     }
 
     const explorationTypes = {
+      // "测试远航": { duration: 10, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "近海远航": { duration: 5 * 60 * 60 * 1000, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "远海探索": { duration: 8 * 60 * 60 * 1000, reward: { minGold: 3200, maxGold: 4000, seeds: 15, fish: 5 } },
       "随机探索": { duration: 12 * 60 * 60 * 1000, reward: { minGold: 3000, maxGold: 8000, seeds: { min: 10, max: 20 }, fish: { min: 3, max: 10 } } }
