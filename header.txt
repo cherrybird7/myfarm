@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         我的农田
 // @author       bug人@,Pinenutn
-// @version      1.0.1
+// @version      1.0.3
 // @description  实现部分农田小游戏插件，使用<.成为农夫>开启游戏，<.农场指令>查看帮助
 // @timestamp    1729357648
 // @license      Apache-2.0
