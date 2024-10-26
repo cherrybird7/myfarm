@@ -81,11 +81,11 @@ export class Farmer {
   experience: number;
   crops: { [key: string]: { seed: string; harvestTime: number; stolen?: boolean } };
   warehouse: { [key: string]: number };
-  private lastStealTime: number; // 确保 lastStealTime 只声明一次
-  private weatherSystem: WeatherSystem; // 添加 weatherSystem 实例
+  lastStealTime: number; // 确保 lastStealTime 只声明一次
+  public weatherSystem: WeatherSystem; // 添加 weatherSystem 实例
   lastSignInDate: string; // 新增 lastSignInDate 属性
-  private purchasedFields: { [level: number]: boolean }; // 记录每个等级的扩容田地是否已经购买过
-  private stealCooldown: number = 60 * 1000; // 偷窃冷却时间，单位为毫秒，这里设置为1分钟
+  purchasedFields: { [level: number]: boolean }; // 记录每个等级的扩容田地是否已经购买过
+  stealCooldown: number = 60 * 1000; // 偷窃冷却时间，单位为毫秒，这里设置为1分钟
   fishPond: number; // 鱼塘中的鱼苗数量
   lastFishPondRefresh: string; // 上次刷新鱼塘的日期
 
@@ -176,6 +176,7 @@ export class Farmer {
     }
 
     // 获取当前天气
+    console.log(JSON.stringify(this.weatherSystem))
     const weatherEffect = WeatherEffects[this.weatherSystem.getCurrentWeather()];
 
     let plantingTime = Math.random() * (4 - 0.5) + 0.5;
@@ -192,7 +193,16 @@ export class Farmer {
       console.log(`事件类型: ${eventType}`);
 
       if (eventType === "小精灵催熟" && this.level >= 3) {
-        harvestTime *= 0.8; // 缩短20%的种植时间
+        harvestTime =plantingTime * 60 * 60 * 1000 * weatherEffect * .8 +Date.now(); // 缩短20%的种植时间
+        for (let i = 0; i < quantity; i++) {
+          let field = this.getNextAvailableField();
+          this.crops[field] = { seed, harvestTime, stolen: false };
+        }
+        this.warehouse[seed] -= quantity;
+        if (this.warehouse[seed] === 0) {
+          delete this.warehouse[seed];
+        }
+        this.saveData();
         return `哦呀，你的田地吸引到这群可爱的小东西了啊~他们给田地施加了魔法哦。\n成功种植${quantity}块${seed}，成熟时间为${this.formatTime(plantingTime * 0.8)}。`;
       } else if (eventType === "女巫药水致死") {
         this.crops = {}; // 农作物全部消失
@@ -331,6 +341,7 @@ export class Farmer {
     let doubleHarvestChance = this.level * 0.5; // 等级4开始时0.5%，等级5是1%...以此类推
 
     // 如果是丰收日，增加5%的概率
+    console.log(JSON.stringify(this.weatherSystem))
     if (this.weatherSystem.getCurrentWeather() === WeatherType.Harvest) {
       doubleHarvestChance += 5;
     }
@@ -676,6 +687,7 @@ export class Fisher extends Farmer {
       }
       let fisher = new Fisher(id, fisherData.name);
       for (const key in fisherData) {
+        if (key!=='weatherSystem')
         fisher[key] = fisherData[key] || fisher[key]
       }
       // farmer.fields = farmerData.fields || 6;
@@ -851,7 +863,7 @@ export class Fisher extends Farmer {
     const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
     const data:{reachTime:number,userId:string,replyCtx: [string,string,string,string,boolean]}[] = str ? JSON.parse(str):[]
     data.push({
-      reachTime: Date.now() + exploration.duration,
+      reachTime: Date.now() + exploration.duration + 30000,
       userId: this.id,
       replyCtx: [ctx.endPoint.userId, msg.guildId, msg.groupId, msg.sender.userId, (msg.messageType === "private")]
     })
@@ -945,5 +957,13 @@ export class Fisher extends Farmer {
   public isFish(item: string): boolean {
     const fishTypes = ["鲤鱼", "鲱鱼", "小嘴鲈鱼", "太阳鱼", "鳀鱼", "沙丁鱼", "河鲈", "鲢鱼", "鲷鱼", "红鲷鱼", "海参", "虹鳟鱼", "大眼鱼", "西鲱", "大头鱼", "大嘴鲈鱼", "鲑鱼", "鬼鱼", "罗非鱼", "木跃鱼", "狮子鱼", "比目鱼", "大比目鱼", "午夜鲤鱼", "史莱姆鱼", "虾虎鱼", "红鲻鱼", "青花鱼", "狗鱼", "虎纹鳟鱼", "蓝铁饼鱼", "沙鱼"]; // 可以根据需要扩展
     return fishTypes.includes(item);
+  }
+  toJSON() {
+    const obj = {} as any
+    for(const key in this) {
+      if (key!=='weatherSystem')
+      obj[key] = this[key]
+    }
+    return obj
   }
 }

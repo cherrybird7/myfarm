@@ -274,7 +274,7 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
             //初始化用户变量
             let id = msg.sender.userId;
             //let name = msg.sender.nickname;
-            farmer = Farmer.getData(id);
+            farmer = Fisher.getData(id);
 
             if (!farmer) {
               seal.replyToSender(ctx, msg, `你还不是农夫哦，试着用.成为农夫指令加入大家吧！`);
@@ -284,7 +284,7 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
             // 获取目标用户的 ID
             let mctx = seal.getCtxProxyFirst(ctx, cmdArgs);
 
-            let targetFarmer = Farmer.getData(mctx.player.userId);
+            let targetFarmer = Fisher.getData(mctx.player.userId);
 
             if (!targetFarmer) {
               seal.replyToSender(ctx, msg, `这个人还没有成为农夫哦，要不要试着让他也加入你呀~。`);
@@ -583,7 +583,7 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
   function handleFarmerCommand(ctx: seal.MsgContext, msg: seal.Message, cmdArgs: seal.CmdArgs, callback: (farmer: Farmer | null, id: string, name: string) => seal.CmdExecuteResult) {
     let id = ctx.player.userId;
     let name = ctx.player.name;
-    let farmer = Farmer.getData(id);
+    let farmer = Fisher.getData(id);
     return callback(farmer, id, name);
   }
 
