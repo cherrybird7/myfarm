@@ -182,7 +182,7 @@ export class Farmer {
     let harvestTime = (/* @__PURE__ */ new Date()).getTime() + plantingTime * 60 * 60 * 1000 * weatherEffect;
 
     // 添加事件
-    const eventChance = 0.15; // 15% 的概率
+    const eventChance = 0.20; // 20% 的概率
     const eventHappened = Math.random() < eventChance;
 
     console.log(`事件触发概率: ${eventChance}, 事件是否触发: ${eventHappened}`);
@@ -208,7 +208,9 @@ export class Farmer {
       } else if (eventType === "狗熊压坏作物" && quantity > 2) { // 只有当种植数量大于2时才触发
         const fieldsToDestroy = Math.floor(Math.random() * (5 - 3 + 1)) + 3;
         const fieldsDestroyed = Math.min(fieldsToDestroy, quantity);
-        const destroyedFields = Object.keys(this.crops).slice(0, fieldsDestroyed);
+        const allFields = Object.keys(this.crops);
+        const shuffledFields = allFields.sort(() => 0.5 - Math.random()); // 打乱顺序
+        const destroyedFields = shuffledFields.slice(0, fieldsDestroyed); // 选择前 fieldsDestroyed 个
         destroyedFields.forEach(field => delete this.crops[field]);
         this.saveData();
         return `不好了，一只路过的狗熊在你的田地里睡了一觉，压坏了${fieldsDestroyed}块作物...`;
@@ -295,6 +297,8 @@ export class Farmer {
     console.log(`冒险者偷菜事件触发概率: ${adventurerEventChance}, 事件是否触发: ${adventurerEventHappened}`);
 
     if (adventurerEventHappened) {
+      console.log("冒险者偷菜事件触发");
+
       const matureFields = Object.keys(this.crops).filter(field => this.crops[field].harvestTime <= (/* @__PURE__ */ new Date()).getTime() && !this.crops[field].stolen);
       console.log(`成熟田地数量: ${matureFields.length}`);
 
@@ -303,7 +307,10 @@ export class Farmer {
         const stolenFields = matureFields.slice(0, fieldsToSteal);
         console.log(`被偷走的田地数量: ${stolenFields.length}`);
 
-        stolenFields.forEach(field => delete this.crops[field]);
+        stolenFields.forEach(field => {
+          delete this.crops[field];
+          console.log(`田地 ${field} 被偷走`);
+        });
 
         const compensation = Math.floor(Math.random() * (100 - 50 + 1)) + 50;
         const seedTypes = Object.keys(globalStore).filter(item => item.endsWith("种子"));
@@ -318,8 +325,13 @@ export class Farmer {
         this.saveData();
 
         return `路过的冒险者采走了你田地里的作物！不过我们及时追上了他们~\n总之要回了一些报酬呢...也不算差？\n获得${compensation}金币和${seedType}×${seedQuantity}。`;
+      } else {
+        console.log("没有成熟的田地可以被偷");
       }
+    } else {
+      console.log("冒险者偷菜事件未触发");
     }
+
 
     let seed = this.crops[field].seed;
     let crop = seed.replace("种子", "");
@@ -790,11 +802,11 @@ export class Fisher extends Farmer {
       return "今天可没有蚯蚓出来啊...";
     }
 
-    if (this.wormCatchCount >= 12) {
+    if (this.wormCatchCount >= 7) {
       return "这里已经没有蚯蚓了...";
     }
 
-    const successRate = 0.8; // 80% 成功率
+    const successRate = 0.7; // 70% 成功率
     const success = Math.random() < successRate;
 
     if (success) {
@@ -814,11 +826,10 @@ export class Fisher extends Farmer {
 
   public getExplorationType(): string | null {
     const explorationType = this.explorationType;
-    console.log(`读取 explorationType: ${explorationType}`);
     return explorationType;
   }
 
-  public explore(type: string,ctx: seal.MsgContext,msg: seal.Message): string {
+  public explore(type: string, ctx: seal.MsgContext, msg: seal.Message): string {
     // 检查是否处于远航状态
     if (this.explorationType) {
       const remainingTime = this.getExplorationRemainingTime();
@@ -827,7 +838,7 @@ export class Fisher extends Farmer {
     }
 
     const explorationTypes = {
-      // "测试远航": { duration: 10, cost: 0, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
+      //"测试远航": { duration: 10, cost: 0, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "近海远航": { duration: 5 * 60 * 60 * 1000, cost: 1000, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "远海探索": { duration: 8 * 60 * 60 * 1000, cost: 3000, reward: { minGold: 3200, maxGold: 4000, seeds: 15, fish: 5 } },
       "随机探索": { duration: 12 * 60 * 60 * 1000, cost: 5000, reward: { minGold: 3000, maxGold: 8000, seeds: { min: 10, max: 20 }, fish: { min: 3, max: 10 } } }
@@ -842,20 +853,18 @@ export class Fisher extends Farmer {
       return `你的金币不够进行${type}哦~`;
     }
 
-    console.log(`存储前 explorationType: ${this.explorationType}, explorationStartTime: ${this.explorationStartTime}`);
-
     this.money -= exploration.cost;
     this.explorationType = type;
     this.explorationStartTime = Date.now();
     this.saveData();
     const str = seal.ext.find('我的农田插件').storageGet('VoyageTasks')
-    const data:{reachTime:number,userId:string,replyCtx: [string,string,string,string,boolean]}[] = str ? JSON.parse(str):[]
+    const data: { reachTime: number, userId: string, replyCtx: [string, string, string, string, boolean] }[] = str ? JSON.parse(str) : []
     data.push({
       reachTime: Date.now() + exploration.duration,
       userId: this.id,
       replyCtx: [ctx.endPoint.userId, msg.guildId, msg.groupId, msg.sender.userId, (msg.messageType === "private")]
     })
-    seal.ext.find('我的农田插件').storageSet('VoyageTasks',JSON.stringify(data))
+    seal.ext.find('我的农田插件').storageSet('VoyageTasks', JSON.stringify(data))
     console.log(`存储后 explorationType: ${this.explorationType}, explorationStartTime: ${this.explorationStartTime}`);
 
     return `你的船队出航啦~`;
@@ -863,7 +872,7 @@ export class Fisher extends Farmer {
 
 
   public getExplorationRemainingTime(): string {
-    if (!(this.explorationType&&this.explorationStartTime)) {
+    if (!(this.explorationType && this.explorationStartTime)) {
       return "0秒";
     }
 
@@ -896,7 +905,7 @@ export class Fisher extends Farmer {
     }
 
     const explorationTypes = {
-      // "测试远航": { duration: 10, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
+      //"测试远航": { duration: 10, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "近海远航": { duration: 5 * 60 * 60 * 1000, reward: { minGold: 1200, maxGold: 1500, seeds: 7 } },
       "远海探索": { duration: 8 * 60 * 60 * 1000, reward: { minGold: 3200, maxGold: 4000, seeds: 15, fish: 5 } },
       "随机探索": { duration: 12 * 60 * 60 * 1000, reward: { minGold: 3000, maxGold: 8000, seeds: { min: 10, max: 20 }, fish: { min: 3, max: 10 } } }
@@ -934,7 +943,7 @@ export class Fisher extends Farmer {
       this.explorationType = null;
       this.explorationStartTime = null;
       this.saveData();
-      let idnumber = parseInt(this.id.replace('QQ:',''))
+      let idnumber = parseInt(this.id.replace('QQ:', ''))
 
       return `[CQ:at,qq=${idnumber}]你的船队归来啦，带回了${gold}金币、${seedType}×${seedQuantity}mp${fishReward}`;
     }

@@ -415,7 +415,24 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
               const weatherInfo = weatherManager.getWeatherInfo();
 
               // 返回签到信息
-              const signInMessage = `今天已经打过招呼了吧！还是说，你是来看看日历看看天气的？\n日期：${dateInfo}\n${weatherInfo}`;
+              let signInMessage = `今天已经打过招呼了吧！还是说，你是来看看日历看看天气的？\n日期：${dateInfo}\n${weatherInfo}`;
+              switch (weatherManager.getCurrentWeather()) {
+                case WeatherType.Sunny:
+                  signInMessage += "\n哦呀哦呀，是个大晴天呢~（无增益天气）";
+                  break;
+                case WeatherType.Rainy:
+                  signInMessage += "\n下雨了，是植物们喜欢的日子呢~（收获时间缩短，可以抓蚯蚓）";
+                  break;
+                case WeatherType.Drought:
+                  signInMessage += "\n真是火热的天气...别忘了给农田浇水（收获时间延长）";
+                  break;
+                case WeatherType.Stormy:
+                  signInMessage += "\n哎呀！今天暴风雨要来了，注意作物别被吹跑了！（收获时间大幅延长）";
+                  break;
+                case WeatherType.Harvest:
+                  signInMessage += "\n真是令人神清气爽的好日子，你说是不是~（收获时间大幅缩短）";
+                  break;
+              }
               seal.replyToSender(ctx, msg, signInMessage);
               return seal.ext.newCmdExecuteResult(true);
             }
@@ -531,8 +548,8 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
         allowDelegate: false,
         disabledInPrivate: false
       };
-      
-      
+
+
 
       ext.cmdMap["成为农夫"] = cmdBecomeFarmer;
       ext.cmdMap["农场指令"] = cmdFarmCommands;
