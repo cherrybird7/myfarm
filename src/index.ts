@@ -77,7 +77,7 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
     .我的农田 - 查看我的农田信息
     .种植<农作物><数量> - 种植农作物（数量和物品间请加空格）
     .农田商店 - 查看农田商店
-    .购买 <商品名>（数量） - 购买商品（数量和物品间请加空格）
+    .购入 <商品名>（数量） - 购入商品（数量和物品间请加空格）
     .出售 <商品名>（数量） - 出售商品（数量和物品间请加空格）
     .好友信息<@其他人> - 查看好友的农田信息
     .我的仓库 - 查看我的仓库
@@ -173,8 +173,8 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
       };
 
       const cmdBuyItem: seal.CmdItemInfo = {
-        name: "购买",
-        help: "指令：.购买 <商品名>（数量）",
+        name: "购入",
+        help: "指令：.购入 <商品名>（数量）",
         solve: (ctx, msg, cmdArgs) => {
           return handleFarmerCommand(ctx, msg, cmdArgs, (farmer) => {
             if (!farmer) {
@@ -556,7 +556,7 @@ import { WeatherManager } from './weatherManager'; // 导入 WeatherManager 类
       ext.cmdMap["我的农田"] = cmdFarmInfo;
       ext.cmdMap["种植"] = cmdPlantCrop;
       ext.cmdMap["农田商店"] = cmdStoreInfo;
-      ext.cmdMap["购买"] = cmdBuyItem;
+      ext.cmdMap["购入"] = cmdBuyItem;
       ext.cmdMap["出售"] = cmdSellItem;
       ext.cmdMap["好友信息"] = cmdOtherFarmInfo;
       ext.cmdMap["我的仓库"] = cmdWarehouseInfo;

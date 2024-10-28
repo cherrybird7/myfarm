@@ -84,7 +84,7 @@ export class Farmer {
   lastStealTime: number; // 确保 lastStealTime 只声明一次
   public weatherSystem: WeatherSystem; // 添加 weatherSystem 实例
   lastSignInDate: string; // 新增 lastSignInDate 属性
-  purchasedFields: { [level: number]: boolean }; // 记录每个等级的扩容田地是否已经购买过
+  purchasedFields: { [level: number]: boolean }; // 记录每个等级的扩容田地是否已经购入过
   stealCooldown: number = 60 * 1000; // 偷窃冷却时间，单位为毫秒，这里设置为1分钟
   fishPond: number; // 鱼塘中的鱼苗数量
   lastFishPondRefresh: string; // 上次刷新鱼塘的日期
@@ -165,7 +165,7 @@ export class Farmer {
       return `该物品不可种植。`;
     }
     if (!this.warehouse[seed]) {
-      return `你没有${seed}，请购买后种植。`;
+      return `你没有${seed}，请购入后种植。`;
     }
     let availableFields = this.fields - Object.keys(this.crops).length;
     if (quantity > availableFields) {
@@ -418,7 +418,7 @@ export class Farmer {
     for (let item in globalStore) {
       let level = globalStore[item].level;
       if (item === "扩容田地" && this.purchasedFields[level]) {
-        continue; // 如果已经购买过该等级的扩容田地，则不显示该商品
+        continue; // 如果已经购入过该等级的扩容田地，则不显示该商品
       }
       info += `${item}: ${globalStore[item].price}金币 (等级${globalStore[item].level})
 `;
@@ -431,33 +431,33 @@ export class Farmer {
       return `商店中没有${item}。`;
     }
     if (this.level < globalStore[item].level) {
-      return `你的等级不够购买${item}，再加把劲吧~`;
+      return `你的等级不够购入${item}，再加把劲吧~`;
     }
 
-    // 确保购买数量是一个正整数
+    // 确保购入数量是一个正整数
     if (isNaN(quantity) || quantity <= 0 || !Number.isInteger(quantity)) {
-      return `请输入一个有效的购买数量哦`;
+      return `请输入一个有效的购入数量哦`;
     }
 
     let totalPrice = globalStore[item].price * quantity;
     if (this.money < totalPrice) {
-      return `嗯...你的金币不够购买${quantity}个${item}。`;
+      return `嗯...你的金币不够购入${quantity}个${item}。`;
     }
 
     if (item === "扩容田地") {
       let level = globalStore[item].level;
       if (this.purchasedFields[level]) {
-        return `你已经购买过该等级的扩容田地啦！`;
+        return `你已经购入过该等级的扩容田地啦！`;
       }
       this.fields += quantity;
       this.purchasedFields[level] = true;
     } else if (item === "扩容田地ii") {
       if (this.purchasedFields[5]) {
-        return `你已经购买过5级扩容田地啦！`;
+        return `你已经购入过5级扩容田地啦！`;
       }
-      this.fields += 1; // 5级扩容田地一次只能购买一个
+      this.fields += 1; // 5级扩容田地一次只能购入一个
       this.purchasedFields[5] = true;
-      delete globalStore["扩容田地ii"]; // 购买后从商店消失
+      delete globalStore["扩容田地ii"]; // 购入后从商店消失
     } else {
       if (!this.warehouse[item]) {
         this.warehouse[item] = 0;
@@ -467,7 +467,7 @@ export class Farmer {
 
     this.money -= totalPrice;
     this.saveData();
-    return `铛铛——成功购买${item}${quantity}个。`;
+    return `铛铛——成功购入${item}${quantity}个。`;
   }
 
   sellItem(item: string, quantity: number = 1) {
